@@ -868,6 +868,27 @@ canvas.ag-canvas{display:block;width:100%;}
 }
 .mins-quick-btn:active{background:rgba(240,203,69,0.1);border-color:var(--gold);color:var(--gold);}
 
+/* ── Stats view switcher ─────────────────────────────────────────────────── */
+.stats-view-row{display:flex;gap:0;padding:0;border-bottom:2px solid var(--border);flex-shrink:0;}
+.stats-view-btn{
+  flex:1;padding:13px 4px;text-align:center;
+  font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:1px;
+  color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:all 0.15s;-webkit-tap-highlight-color:transparent;
+}
+.stats-view-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* ── Season table ────────────────────────────────────────────────────────── */
+.season-match-row{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.season-match-row:last-child{border-bottom:none;}
+.season-match-name{flex:1;font-family:var(--font-body);font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.season-match-meta{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);}
+.season-match-xg{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--gold);width:44px;text-align:right;}
+.season-match-result{font-family:var(--font-display);font-size:13px;font-weight:700;width:32px;text-align:center;}
+.season-match-result.w{color:#4cd964;}
+.season-match-result.d{color:var(--gold);}
+.season-match-result.l{color:#e74c3c;}
+
 /* ── Import modal ───────────────────────────────────────────────────────── */
 #importModal.visible{display:flex;}
 .imp-mode-btn{
@@ -1323,113 +1344,164 @@ canvas.ag-canvas{display:block;width:100%;}
 
   <div class="sheet-content" id="tabStats" style="display:none">
 
-    <!-- ── Context selector ─────────────────────────────────────────── -->
-    <div class="kpi-ctx-row">
-      <div class="kpi-ctx-chip active" data-ctx="current"  onclick="kpiSetCtx(this)">Bieżący mecz</div>
-      <div class="kpi-ctx-chip"        data-ctx="home"     onclick="kpiSetCtx(this)">🏠 Dom</div>
-      <div class="kpi-ctx-chip"        data-ctx="away"     onclick="kpiSetCtx(this)">✈️ Wyjazd</div>
-      <div class="kpi-ctx-chip"        data-ctx="all"      onclick="kpiSetCtx(this)">Wszystkie</div>
+    <!-- ── Main view switcher ───────────────────────────────────────── -->
+    <div class="stats-view-row">
+      <div class="stats-view-btn active" id="svBtnMatch" onclick="setStatsView('match')">⚽ Mecz</div>
+      <div class="stats-view-btn"        id="svBtnSeason" onclick="setStatsView('season')">📅 Sezon</div>
     </div>
 
-    <!-- ── Segment selector ─────────────────────────────────────────── -->
-    <div class="kpi-seg-row">
-      <div class="kpi-seg-chip active" data-seg="full" onclick="kpiSetSeg(this)">Cały</div>
-      <div class="kpi-seg-chip"        data-seg="h1"   onclick="kpiSetSeg(this)">P1</div>
-      <div class="kpi-seg-chip"        data-seg="h2"   onclick="kpiSetSeg(this)">P2</div>
-      <div class="kpi-seg-chip"        data-seg="q1"   onclick="kpiSetSeg(this)">1–15'</div>
-      <div class="kpi-seg-chip"        data-seg="q2"   onclick="kpiSetSeg(this)">16–30'</div>
-      <div class="kpi-seg-chip"        data-seg="q3"   onclick="kpiSetSeg(this)">31–45'</div>
-      <div class="kpi-seg-chip"        data-seg="q4"   onclick="kpiSetSeg(this)">46–60'</div>
-      <div class="kpi-seg-chip"        data-seg="q5"   onclick="kpiSetSeg(this)">61–75'</div>
-      <div class="kpi-seg-chip"        data-seg="q6"   onclick="kpiSetSeg(this)">76–90'</div>
-    </div>
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- WIDOK MECZ                                                     -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div id="statsViewMatch">
 
-    <!-- ── KPI grid ─────────────────────────────────────────────────── -->
-    <div class="kpi-grid" id="kpiGrid"></div>
-
-    <!-- ── Shot Share ───────────────────────────────────────────────── -->
-    <div class="viz-section" id="shotShareSection">
-      <div class="viz-title">Shot Share</div>
-      <div id="shotShareBars"></div>
-    </div>
-
-    <!-- ── xG Timeline ──────────────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">xG Timeline</div>
-      <div class="viz-canvas-wrap"><canvas id="timelineCanvas" class="viz-canvas" height="160"></canvas></div>
-    </div>
-
-    <!-- ── Heatmap ──────────────────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">Shot Heatmap</div>
-      <div class="viz-canvas-wrap"><canvas id="heatmapCanvas" class="viz-canvas" height="160"></canvas></div>
-    </div>
-
-    <!-- ── Situation breakdown ──────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">Geneza szans</div>
-      <div id="kpiOriginBars"></div>
-    </div>
-
-    <!-- ── Shot type breakdown ──────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">Typ strzału</div>
-      <div id="kpiShotTypeBars"></div>
-    </div>
-
-    <!-- ── Player xG ────────────────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">Zawodnicy — xG</div>
-      <div id="playerBars"></div>
-    </div>
-
-    <!-- ── Player stats table ───────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">Statystyki zawodników</div>
-      <div id="kpiPlayerTable"></div>
-    </div>
-
-    <!-- ── GK stats ─────────────────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">Bramkarz</div>
-      <div id="gkStats"></div>
-    </div>
-
-    <!-- ── Shot zones ───────────────────────────────────────────────── -->
-    <div class="viz-section">
-      <div class="viz-title">Strefy strzałów</div>
-      <div class="zone-grid" id="zoneGrid"></div>
-    </div>
-
-    <!-- ── Half split analysis ──────────────────────────────────────── -->
-    <div class="analysis-section">
-      <div class="analysis-title">Pierwsza vs Druga Połowa</div>
-      <div class="half-grid">
-        <div class="half-card"><div class="half-card-title">1. Połowa</div><div id="h1Stats"></div></div>
-        <div class="half-card"><div class="half-card-title">2. Połowa</div><div id="h2Stats"></div></div>
+      <!-- Match selector -->
+      <div class="kpi-ctx-row" style="padding-top:8px;">
+        <div class="kpi-ctx-chip active" data-ctx="current" onclick="kpiSetCtx(this)">Bieżący</div>
+        <div id="matchSelectorChips"></div>
       </div>
-      <div id="halfInsight" style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);text-align:center;padding-top:6px;border-top:1px solid var(--border);line-height:1.7;"></div>
-    </div>
 
-    <!-- ── xG model toggle ──────────────────────────────────────────── -->
-    <div class="viz-section">
+      <!-- Segment filter -->
+      <div class="kpi-seg-row">
+        <div class="kpi-seg-chip active" data-seg="full" onclick="kpiSetSeg(this)">Cały</div>
+        <div class="kpi-seg-chip" data-seg="h1" onclick="kpiSetSeg(this)">P1</div>
+        <div class="kpi-seg-chip" data-seg="h2" onclick="kpiSetSeg(this)">P2</div>
+        <div class="kpi-seg-chip" data-seg="q1" onclick="kpiSetSeg(this)">1–15'</div>
+        <div class="kpi-seg-chip" data-seg="q2" onclick="kpiSetSeg(this)">16–30'</div>
+        <div class="kpi-seg-chip" data-seg="q3" onclick="kpiSetSeg(this)">31–45'</div>
+        <div class="kpi-seg-chip" data-seg="q4" onclick="kpiSetSeg(this)">46–60'</div>
+        <div class="kpi-seg-chip" data-seg="q5" onclick="kpiSetSeg(this)">61–75'</div>
+        <div class="kpi-seg-chip" data-seg="q6" onclick="kpiSetSeg(this)">76–90'</div>
+      </div>
+
+      <!-- KPI cards (match) -->
+      <div class="kpi-grid" id="kpiGrid"></div>
+
+      <!-- Shot Share -->
+      <div class="viz-section" id="shotShareSection">
+        <div class="viz-title">Shot Share</div>
+        <div id="shotShareBars"></div>
+      </div>
+
+      <!-- xG Timeline -->
+      <div class="viz-section">
+        <div class="viz-title">xG Timeline</div>
+        <div class="viz-canvas-wrap"><canvas id="timelineCanvas" class="viz-canvas" height="160"></canvas></div>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="viz-section">
+        <div class="viz-title">Shot Heatmap</div>
+        <div class="viz-canvas-wrap"><canvas id="heatmapCanvas" class="viz-canvas" height="160"></canvas></div>
+      </div>
+
+      <!-- Situation breakdown -->
+      <div class="viz-section">
+        <div class="viz-title">Geneza szans</div>
+        <div id="kpiOriginBars"></div>
+      </div>
+
+      <!-- Shot type breakdown -->
+      <div class="viz-section">
+        <div class="viz-title">Typ strzału</div>
+        <div id="kpiShotTypeBars"></div>
+      </div>
+
+      <!-- Half split -->
+      <div class="analysis-section">
+        <div class="analysis-title">P1 vs P2</div>
+        <div class="half-grid">
+          <div class="half-card"><div class="half-card-title">1. Połowa</div><div id="h1Stats"></div></div>
+          <div class="half-card"><div class="half-card-title">2. Połowa</div><div id="h2Stats"></div></div>
+        </div>
+        <div id="halfInsight" style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);text-align:center;padding-top:6px;border-top:1px solid var(--border);line-height:1.7;"></div>
+      </div>
+
+      <!-- Player xG (match) -->
+      <div class="viz-section">
+        <div class="viz-title">Zawodnicy — xG</div>
+        <div id="playerBars"></div>
+      </div>
+
+      <!-- GK stats (match) -->
+      <div class="viz-section">
+        <div class="viz-title">Bramkarz</div>
+        <div id="gkStats"></div>
+      </div>
+
+      <!-- Shot zones -->
+      <div class="viz-section">
+        <div class="viz-title">Strefy strzałów</div>
+        <div class="zone-grid" id="zoneGrid"></div>
+      </div>
+
+    </div><!-- /statsViewMatch -->
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- WIDOK SEZON                                                    -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div id="statsViewSeason" style="display:none;">
+
+      <!-- Season selector -->
+      <div style="padding:10px 14px 0;">
+        <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Sezon</div>
+        <select id="seasonSelector" onchange="renderSeasonDashboard()" style="width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font-mono);font-size:11px;outline:none;appearance:none;-webkit-appearance:none;"></select>
+      </div>
+
+      <!-- Season context filter (home/away/all) -->
+      <div class="kpi-ctx-row" style="padding-top:8px;">
+        <div class="kpi-ctx-chip active" data-sctx="all"  onclick="setSeasonCtx(this)">Wszystkie</div>
+        <div class="kpi-ctx-chip"        data-sctx="home" onclick="setSeasonCtx(this)">🏠 Dom</div>
+        <div class="kpi-ctx-chip"        data-sctx="away" onclick="setSeasonCtx(this)">✈️ Wyjazd</div>
+      </div>
+
+      <!-- Season KPI grid -->
+      <div class="kpi-grid" id="seasonKpiGrid"></div>
+
+      <!-- Results table per match -->
+      <div class="viz-section">
+        <div class="viz-title">Wyniki meczów</div>
+        <div id="seasonMatchTable"></div>
+      </div>
+
+      <!-- Season player table -->
+      <div class="viz-section">
+        <div class="viz-title">Zawodnicy — sezon</div>
+        <div id="seasonPlayerTable"></div>
+      </div>
+
+      <!-- Season origin breakdown -->
+      <div class="viz-section">
+        <div class="viz-title">Geneza szans — sezon</div>
+        <div id="seasonOriginBars"></div>
+      </div>
+
+    </div><!-- /statsViewSeason -->
+
+    <!-- xG model toggle (shared) -->
+    <div class="viz-section" style="margin-top:8px;">
       <div class="viz-title">Model xG</div>
       <div class="model-toggle-row">
         <div class="model-btn active" id="modelBasic"    onclick="setXGModel('basic')">Basic</div>
         <div class="model-btn"        id="modelAdvanced" onclick="setXGModel('advanced')">Advanced</div>
       </div>
-      <div id="modelDesc" style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);line-height:1.6;padding:8px 10px;background:var(--surface2);border-radius:8px;">
-        Basic: dystans + kąt. Prosty i przejrzysty.
-      </div>
+      <div id="modelDesc" style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);line-height:1.6;padding:8px 10px;background:var(--surface2);border-radius:8px;">Basic: dystans + kąt. Prosty i przejrzysty.</div>
     </div>
-
-    <button onclick="openAllGames()" style="width:100%;padding:13px;border-radius:10px;border:1px solid rgba(240,203,69,0.3);background:rgba(240,203,69,0.07);color:var(--gold);font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;margin-top:8px;margin-bottom:24px;touch-action:manipulation;">📊 PODSUMOWANIE WSZYSTKICH MECZY</button>
 
   </div>
   <div class="sheet-content" id="tabMatch">
     <!-- Saved Matches -->
     <div class="section-divider">Saved Matches</div>
     <button class="new-match-btn" onclick="newMatch()">＋ New Match</button>
+
+    <!-- Season management -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <div style="flex:1;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;">
+        SEZON: <span id="currentSeasonLabel" style="color:var(--gold);font-weight:700;"></span>
+      </div>
+      <button onclick="newSeason()" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(240,203,69,0.4);background:rgba(240,203,69,0.08);color:var(--gold);font-family:var(--font-mono);font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">🗓 Nowy sezon</button>
+    </div>
+
     <div class="match-history-list" id="matchHistoryList"></div>
     <div class="section-divider">Current Match</div>
     <!-- Match name is auto-generated from teams + date + result -->
@@ -3330,6 +3402,7 @@ function saveCurrentMatch(){
     pilicaSide: pilicaSide,
     defaultGK: (document.getElementById('defaultGK')||{value:''}).value || '',
     squadMinutes: JSON.parse(JSON.stringify(squadMinutes)),
+    seasonId: getCurrentSeasonId(),
     savedAt: Date.now()
   };
   try {
@@ -3338,8 +3411,8 @@ function saveCurrentMatch(){
     var idx = allMatches.findIndex(function(m){ return m.id === currentMatchId; });
     if(idx >= 0) allMatches[idx] = matchData;
     else allMatches.unshift(matchData);
-    // Keep max 20 matches
-    if(allMatches.length > 20) allMatches = allMatches.slice(0,20);
+    // Keep max 100 matches (increased from 20 for multi-season)
+    if(allMatches.length > 100) allMatches = allMatches.slice(0,100);
     localStorage.setItem('xgscout_matches', JSON.stringify(allMatches));
   } catch(e) {
     console.warn('Storage save failed:', e.message);
@@ -4061,12 +4134,216 @@ function renderZones(){
 // ═══════════════════════════════════════════════════════════════════════════
 // KPI DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// SEASON SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+function getCurrentSeasonId(){
+  try{ return localStorage.getItem('xgscout_current_season')||'2024-25'; }catch(e){return '2024-25';}
+}
+function setCurrentSeasonId(id){
+  try{ localStorage.setItem('xgscout_current_season',id); }catch(e){}
+}
+function getAllSeasonIds(){
+  var all=loadAllMatches();
+  var ids={};
+  all.forEach(function(m){ ids[m.seasonId||'2024-25']=true; });
+  var current=getCurrentSeasonId();
+  ids[current]=true;
+  return Object.keys(ids).sort().reverse();
+}
+function updateSeasonLabel(){
+  var el=document.getElementById('currentSeasonLabel');
+  if(el) el.textContent=getCurrentSeasonId();
+}
+function newSeason(){
+  var name=prompt('Nazwa nowego sezonu (np. 2025-26):');
+  if(!name||!name.trim()) return;
+  name=name.trim();
+  // Save current match before switching
+  saveCurrentMatch();
+  setCurrentSeasonId(name);
+  updateSeasonLabel();
+  // Start a fresh match for new season
+  newMatch();
+  // Re-render season selector in stats
+  renderSeasonSelector();
+  alert('Sezon "'+name+'" rozpoczęty. Stare dane są zachowane w poprzednim sezonie.');
+}
+function renderSeasonSelector(){
+  var sel=document.getElementById('seasonSelector');
+  if(!sel) return;
+  var ids=getAllSeasonIds();
+  sel.innerHTML=ids.map(function(id){
+    return '<option value="'+id+'">'+id+'</option>';
+  }).join('');
+  renderSeasonDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATS VIEW SWITCHER
+// ═══════════════════════════════════════════════════════════════════════════
+var statsView='match'; // 'match' | 'season'
+var seasonCtx='all';   // 'all' | 'home' | 'away'
+
+function setStatsView(v){
+  statsView=v;
+  document.getElementById('svBtnMatch').classList.toggle('active',v==='match');
+  document.getElementById('svBtnSeason').classList.toggle('active',v==='season');
+  document.getElementById('statsViewMatch').style.display=v==='match'?'':'none';
+  document.getElementById('statsViewSeason').style.display=v==='season'?'':'none';
+  if(v==='season'){
+    renderSeasonSelector();
+  } else {
+    renderKPIDashboard();
+  }
+}
+
+function setSeasonCtx(chip){
+  seasonCtx=chip.dataset.sctx;
+  document.querySelectorAll('[data-sctx]').forEach(function(c){c.classList.remove('active');});
+  chip.classList.add('active');
+  renderSeasonDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEASON DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+function renderSeasonDashboard(){
+  var sel=document.getElementById('seasonSelector');
+  var seasonId=sel?sel.value:getCurrentSeasonId();
+  var all=loadAllMatches();
+  var seasonMatches=all.filter(function(m){ return (m.seasonId||'2024-25')===seasonId; });
+
+  // Also include current match if it's in this season
+  if(getCurrentSeasonId()===seasonId && shots.length){
+    var curId=currentMatchId||'current';
+    if(!seasonMatches.find(function(m){return m.id===curId;})){
+      seasonMatches.unshift({
+        id:'current',name:document.getElementById('matchName2').value||'Bieżący mecz',
+        shots:shots, pilicaSide:pilicaSide,
+        homeTeam:(document.getElementById('homeTeam')||{value:''}).value,
+        awayTeam:(document.getElementById('awayTeam')||{value:''}).value,
+      });
+    }
+  }
+
+  if(!seasonMatches.length){
+    var g=document.getElementById('seasonKpiGrid');
+    if(g) g.innerHTML='<div style="grid-column:1/-1;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-align:center;padding:20px 0;">Brak meczów w tym sezonie</div>';
+    return;
+  }
+
+  // Aggregate all shots from season with context filter
+  var allShots=[];
+  seasonMatches.forEach(function(m){
+    (m.shots||[]).forEach(function(s){
+      if(seasonCtx==='home' && m.pilicaSide!=='home') return;
+      if(seasonCtx==='away' && m.pilicaSide!=='away') return;
+      allShots.push(s);
+    });
+  });
+
+  var pSide=pilicaSide;
+  var pilicaShots=allShots.filter(function(s){return s.team===pSide;});
+  var oppShots=allShots.filter(function(s){return s.team!==pSide;});
+
+  var pXG=pilicaShots.reduce(function(a,s){return a+s.xg;},0);
+  var oXG=oppShots.reduce(function(a,s){return a+s.xg;},0);
+  var pGoals=pilicaShots.filter(function(s){return s.goal;}).length;
+  var oGoals=oppShots.filter(function(s){return s.goal;}).length;
+  var pBig=pilicaShots.filter(function(s){return s.xg>=0.40;}).length;
+  var n=seasonMatches.length;
+
+  // KPI cards
+  var diff=pXG-oXG;
+  var cards=[
+    {val:n,                           lbl:'MECZE',        sub:seasonId,                col:'rgba(232,240,232,0.5)'},
+    {val:pGoals+' – '+oGoals,         lbl:'GOLE (łącznie)',sub:'Pilica – Rywal',       col:pGoals>oGoals?'#4cd964':pGoals<oGoals?'#e74c3c':'var(--gold)'},
+    {val:(pXG/n).toFixed(2),          lbl:'xG/MECZ',      sub:'Pilica średnio',        col:'var(--gold)'},
+    {val:(oXG/n).toFixed(2),          lbl:'xG/MECZ',      sub:'Rywal średnio',         col:'#e74c3c'},
+    {val:(diff>=0?'+':'')+diff.toFixed(2), lbl:'xG DIFF', sub:'Sezon łącznie',        col:diff>0?'#4cd964':diff<0?'#e74c3c':'var(--gold)'},
+    {val:(pilicaShots.length/n).toFixed(1),lbl:'STRZAŁY/MECZ',sub:'Pilica średnio',   col:'var(--gold)'},
+    {val:(oppShots.length/n).toFixed(1),  lbl:'STRZAŁY/MECZ',sub:'Rywal średnio',     col:'#e74c3c'},
+    {val:pBig,                         lbl:'DUŻE SZANSE', sub:'Pilica sezon',           col:'var(--gold)'},
+    {val:Math.round(pGoals/n*10)/10,   lbl:'GOLE/MECZ',   sub:'Pilica',                col:'#4cd964'},
+  ];
+  var grid=document.getElementById('seasonKpiGrid');
+  if(grid) grid.innerHTML=cards.map(function(c){
+    return '<div class="kpi-card"><div class="kpi-card-accent" style="background:'+c.col+';"></div>'
+      +'<div class="kpi-card-val" style="color:'+c.col+'">'+c.val+'</div>'
+      +'<div class="kpi-card-lbl">'+c.lbl+'</div>'
+      +'<div class="kpi-card-sub">'+c.sub+'</div></div>';
+  }).join('');
+
+  // Match results table
+  var tbl=document.getElementById('seasonMatchTable');
+  if(tbl){
+    if(!seasonMatches.length){ tbl.innerHTML=''; }
+    else {
+      tbl.innerHTML=seasonMatches.map(function(m){
+        var mShots=m.shots||[];
+        var mPilica=mShots.filter(function(s){return s.team===(m.pilicaSide||'home');});
+        var mOpp=mShots.filter(function(s){return s.team!==(m.pilicaSide||'home');});
+        var mPxg=mPilica.reduce(function(a,s){return a+s.xg;},0);
+        var mOxg=mOpp.reduce(function(a,s){return a+s.xg;},0);
+        var mPg=mPilica.filter(function(s){return s.goal;}).length;
+        var mOg=mOpp.filter(function(s){return s.goal;}).length;
+        var res=mPg>mOg?'W':mPg<mOg?'L':'R';
+        var resClass=mPg>mOg?'w':mPg<mOg?'l':'d';
+        return '<div class="season-match-row">'
+          +'<div><div class="season-match-name">'+(m.name||m.id)+'</div>'
+          +'<div class="season-match-meta">'+mPilica.length+' strz. · xG '+mPxg.toFixed(2)+' – '+mOxg.toFixed(2)+'</div></div>'
+          +'<div class="season-match-result '+resClass+'">'+res+' '+mPg+':'+mOg+'</div>'
+          +'</div>';
+      }).join('');
+    }
+  }
+
+  // Season player table
+  var pmap={};
+  pilicaShots.forEach(function(s){
+    var p=s.player||'Unknown';
+    if(p==='Unknown') return;
+    if(!pmap[p]) pmap[p]={shots:0,xg:0,goals:0,xa:0,assists:0};
+    pmap[p].shots++; pmap[p].xg+=s.xg; if(s.goal) pmap[p].goals++;
+  });
+  pilicaShots.forEach(function(s){
+    var a=s.assistPlayer||'';
+    if(!a) return;
+    if(!pmap[a]) pmap[a]={shots:0,xg:0,goals:0,xa:0,assists:0};
+    pmap[a].xa+=s.xg; if(s.goal) pmap[a].assists++;
+  });
+  var prows=Object.keys(pmap).map(function(k){return{name:k,d:pmap[k]};}).sort(function(a,b){return b.d.xg-a.d.xg;});
+  var ptEl=document.getElementById('seasonPlayerTable');
+  if(ptEl){
+    if(!prows.length){ ptEl.innerHTML='<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);padding:8px 0;">Brak danych zawodników</div>'; }
+    else {
+      var mono='font-family:var(--font-mono)';
+      ptEl.innerHTML='<div style="overflow-x:auto;"><table class="kpi-player-table">'
+        +'<thead><tr><th>Zawodnik</th><th>Strz.</th><th class="val-xg">xG</th><th class="val-xg">xG/mecz</th><th class="val-goal">Gole</th><th>xA</th><th>Asysty</th></tr></thead><tbody>'
+        +prows.map(function(r){
+          var d=r.d;
+          return '<tr><td>'+r.name+'</td><td>'+d.shots+'</td>'
+            +'<td class="val-xg">'+d.xg.toFixed(2)+'</td>'
+            +'<td class="val-xg" style="opacity:.65;font-size:9px;">'+(d.xg/n).toFixed(2)+'</td>'
+            +'<td class="val-goal">'+d.goals+'</td>'
+            +'<td>'+(d.xa>0?d.xa.toFixed(2):'—')+'</td>'
+            +'<td>'+(d.assists||'—')+'</td></tr>';
+        }).join('')
+        +'</tbody></table></div>';
+    }
+  }
+
+  // Season origin breakdown
+  renderKPIBreakdown('seasonOriginBars', pilicaShots, 'origin', '#f0cb45');
+}
+
 var kpiCtx='current';  // current | home | away | all
 var kpiSeg='full';     // full | h1 | h2 | q1..q6
 
 function kpiSetCtx(chip){
   kpiCtx=chip.dataset.ctx;
-  document.querySelectorAll('.kpi-ctx-chip').forEach(function(c){c.classList.remove('active');});
+  document.querySelectorAll('[data-ctx]').forEach(function(c){c.classList.remove('active');});
   chip.classList.add('active');
   renderKPIDashboard();
 }
@@ -4453,6 +4730,7 @@ function confirmImport(){
 }
 
 function renderAllViz(){
+  updateSeasonLabel();
   renderKPIDashboard();
   renderTimeline();
   renderHeatmap();
