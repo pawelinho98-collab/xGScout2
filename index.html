@@ -1800,7 +1800,9 @@ function calcXG(px,py,bp,si,assistType,pr,team){
   const l=-0.75 + distTerm + (0.015*angle)
     +goalLinePenalty
     // Header: -0.15 (close headers are still great chances), Weak Foot: -0.2
-    +(bp==='Header'?-0.15:bp==='Weak Foot'?-0.2:0)
+    // Header: -0.55 (headers ~40-60% less likely to score than foot from same position)
+    // Weak Foot: -0.30
+    +(bp==='Header'?-0.55:bp==='Weak Foot'?-0.30:0)
     +(si==='Counter'?0.15:si==='Set Piece'?-0.1:si==='Open Play'?0:si==='One-on-One'?0.70:si==='Cross'?0.1:0)
     // Cross assist is positive (pulled ball into box = good chance), Through Ball great
     +(assistType==='Podanie prostopadłe'||assistType==='Through Ball'?0.25:assistType==='Dośrodkowanie płaskie'||assistType==='Dośrodkowanie górą'||assistType==='Cross'?0.15:assistType==='Stały fragment'||assistType==='Corner'?0.05:assistType==='Bez asysty'||assistType==='No Assist'||assistType==='Foul Won'?0:0.1)
