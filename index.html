@@ -3495,9 +3495,11 @@ function renderMatchHistory(){
   var list = document.getElementById('matchHistoryList');
   if(!list) return;
   var all = loadAllMatches();
-  all = filterMatchesByVenue(all, agFilter);
+  // Filter by current season
+  var curSeason = getCurrentSeasonId();
+  all = all.filter(function(m){ return (m.seasonId||'2024-25') === curSeason; });
   if(!all.length){
-    list.innerHTML = '<div style="padding:12px;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">No saved matches yet</div>';
+    list.innerHTML = '<div style="padding:12px;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">Brak meczów w tym sezonie</div>';
     return;
   }
   var html2 = '';
@@ -4173,8 +4175,9 @@ function renderSeasonSelector(){
   var sel=document.getElementById('seasonSelector');
   if(!sel) return;
   var ids=getAllSeasonIds();
+  var current=getCurrentSeasonId();
   sel.innerHTML=ids.map(function(id){
-    return '<option value="'+id+'">'+id+'</option>';
+    return '<option value="'+id+'"'+(id===current?' selected':'')+'>'+id+'</option>';
   }).join('');
   renderSeasonDashboard();
 }
@@ -4233,19 +4236,18 @@ function renderSeasonDashboard(){
     return;
   }
 
-  // Aggregate all shots from season with context filter
-  var allShots=[];
+  // Aggregate shots from season — each match has its own pilicaSide
+  var pilicaShots=[], oppShots=[];
   seasonMatches.forEach(function(m){
+    var mSide=m.pilicaSide||'home';
+    // seasonCtx filters by whether Pilica is home or away for THIS match
+    if(seasonCtx==='home' && mSide!=='home') return;
+    if(seasonCtx==='away' && mSide!=='away') return;
     (m.shots||[]).forEach(function(s){
-      if(seasonCtx==='home' && m.pilicaSide!=='home') return;
-      if(seasonCtx==='away' && m.pilicaSide!=='away') return;
-      allShots.push(s);
+      if(s.team===mSide) pilicaShots.push(s);
+      else oppShots.push(s);
     });
   });
-
-  var pSide=pilicaSide;
-  var pilicaShots=allShots.filter(function(s){return s.team===pSide;});
-  var oppShots=allShots.filter(function(s){return s.team!==pSide;});
 
   var pXG=pilicaShots.reduce(function(a,s){return a+s.xg;},0);
   var oXG=oppShots.reduce(function(a,s){return a+s.xg;},0);
@@ -4282,8 +4284,9 @@ function renderSeasonDashboard(){
     else {
       tbl.innerHTML=seasonMatches.map(function(m){
         var mShots=m.shots||[];
-        var mPilica=mShots.filter(function(s){return s.team===(m.pilicaSide||'home');});
-        var mOpp=mShots.filter(function(s){return s.team!==(m.pilicaSide||'home');});
+        var mSide=m.pilicaSide||'home';
+        var mPilica=mShots.filter(function(s){return s.team===mSide;});
+        var mOpp=mShots.filter(function(s){return s.team!==mSide;});
         var mPxg=mPilica.reduce(function(a,s){return a+s.xg;},0);
         var mOxg=mOpp.reduce(function(a,s){return a+s.xg;},0);
         var mPg=mPilica.filter(function(s){return s.goal;}).length;
